@@ -13,7 +13,6 @@ accessToken := "1.iap2H-4qQ-WR9sy55555uaytQ.o5A32LYL5-87a_60kcQiX1Lp878GVbx8xfVv
 client := seed.New(accessToken)
 
 getTransactionsReq := TransactionRequest{
-	Limit: 100,
 	Client: client,
 }
 
@@ -24,14 +23,13 @@ iterator := getTransactionsReq.Iterator()
 for iterator.HasNext() {
 	var transactions []seed.Transaction
 	var err error
-	if err = iterator.Next(); err != nil {
+	if transactions, _, err = iterator.Next(); err != nil {
 		panic(err.Error())
 	}
-	fmt.Printf("Transactions:\n%v", iterator.Transactions())
-	fmt.Printf("Errors:\n%v", iterator.Errors())
+	fmt.Printf("Transactions:\n%v", transactions)
 }
 
 // previous will get the previous page of transactions
 
-previousTransactions, err = iterator.Previous()
+previousTransactions, _, err = iterator.Previous()
 ```
