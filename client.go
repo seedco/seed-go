@@ -1,6 +1,10 @@
 package seed
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+	"net/url"
+)
 
 const (
 	ApiBase = "https://api.seed.co/v1/public"
@@ -21,4 +25,17 @@ func New(accessToken string) *Client {
 
 func (c *Client) SetClientVersion(clientVersion string) {
 	c.clientVersion = clientVersion
+}
+
+func (c *Client) do(req *http.Request) (*http.Response, error) {
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.accessToken))
+	if c.clientVersion != "" {
+		req.Header.Set("Client-Version-Id", c.clientVersion)
+	}
+	return c.httpClient.Do(req)
+}
+
+type Pages struct {
+	Next     *url.Values `json:"next"`
+	Previous *url.Values `json:"previous"`
 }
