@@ -1,7 +1,9 @@
 # Seed-Go
 A Go client for the Seed API
 
-# Usage
+[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/seedco/seed-go)
+
+## Usage
 
 ```go
 // to obtain an access token go to https://api.seed.co/v1/public/auth/token in a browser and enter in your seed username/password
