@@ -37,9 +37,9 @@ type TransactionsIterator struct {
 }
 
 type TransactionsResponse struct {
-	Errors  []map[string]string `json:"errors"`
-	Results []Transaction       `json:"results"`
-	Pages   Pages               `json:"pages"`
+	Errors  ErrorList     `json:"errors"`
+	Results []Transaction `json:"results"`
+	Pages   Pages         `json:"pages"`
 }
 
 func (t *TransactionsRequest) GetAll() ([]Transaction, error) {
@@ -109,7 +109,8 @@ func (t *TransactionsIterator) SetBatchSize(n int) {
 	}
 }
 
-func (t *TransactionsIterator) Next() ([]Transaction, []map[string]string, error) {
+// Next will retrieve the next batch of transactions. It returns a slice of Transactions, and any http errors
+func (t *TransactionsIterator) Next() ([]Transaction, error) {
 	var err error
 	var params *url.Values
 	if t.response != nil {
@@ -119,12 +120,13 @@ func (t *TransactionsIterator) Next() ([]Transaction, []map[string]string, error
 	}
 
 	if t.response, err = t.request.get(params); err != nil {
-		return []Transaction{}, []map[string]string{}, fmt.Errorf("error when sending the request to seed: %v", err)
+		return []Transaction{}, fmt.Errorf("error when sending the request to seed: %v", err)
 	}
-	return t.response.Results, t.response.Errors, nil
+	return t.response.Results, &t.response.Errors
 }
 
-func (t *TransactionsIterator) Previous() ([]Transaction, []map[string]string, error) {
+// Previous will retrieve the previous batch of transactions. It returns a slice of Transactions, and any errors that happen
+func (t *TransactionsIterator) Previous() ([]Transaction, error) {
 	var err error
 	var params *url.Values
 	if t.response != nil {
@@ -134,11 +136,7 @@ func (t *TransactionsIterator) Previous() ([]Transaction, []map[string]string, e
 	}
 
 	if t.response, err = t.request.get(params); err != nil {
-		return []Transaction{}, []map[string]string{}, fmt.Errorf("error when sending the request to seed: %v", err)
+		return []Transaction{}, fmt.Errorf("error when sending the request to seed: %v", err)
 	}
-	return t.response.Results, t.response.Errors, nil
-}
-
-func (t *TransactionsIterator) Errors() []map[string]string {
-	return t.response.Errors
+	return t.response.Results, &t.response.Errors
 }
