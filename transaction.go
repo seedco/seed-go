@@ -4,7 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 	"time"
+)
+
+const (
+	MaxBatchSize = 1000
 )
 
 type Transaction struct {
@@ -21,42 +27,118 @@ type TransactionsRequest struct {
 	Status            string
 	From              time.Time
 	To                time.Time
-	Offset            int
-	Limit             int
+	Client            *Client
+}
+
+type TransactionsIterator struct {
+	request   *TransactionsRequest
+	response  *TransactionsResponse
+	batchSize int
 }
 
 type TransactionsResponse struct {
 	Errors  []map[string]string `json:"errors"`
 	Results []Transaction       `json:"results"`
-	Pages   map[string]string   `json:"pages"`
+	Pages   Pages               `json:"pages"`
 }
 
-func (c *Client) GetTransactions(transactionsReq TransactionsRequest) ([]Transaction, error) {
+func (t *TransactionsRequest) GetAll() ([]Transaction, error) {
+	var resp *TransactionsResponse
+	var err error
+	if resp, err = t.get(nil); err != nil {
+		return []Transaction{}, err
+	}
+
+	return resp.Results, nil
+}
+
+func (t *TransactionsRequest) get(paginationParams *url.Values) (*TransactionsResponse, error) {
 	var err error
 	var req *http.Request
-	var transactions []Transaction
+	var response *TransactionsResponse
 
-	if req, err = http.NewRequest("GET", fmt.Sprintf("%s/%s", ApiBase, "transactions/"), nil); err != nil {
-		return transactions, err
+	params := &url.Values{}
+	if t.CheckingAccountID != "" {
+		params.Set("checking_account_id", t.CheckingAccountID)
+	}
+	if t.Status != "" {
+		params.Set("status", t.Status)
+	}
+	dateLayout := "2006-01-02"
+	if !t.From.IsZero() {
+		params.Set("from", t.From.Format(dateLayout))
+	}
+	if !t.To.IsZero() {
+		params.Set("to", t.To.Format(dateLayout))
+	}
+
+	var url *url.URL
+	if url, err = url.Parse(fmt.Sprintf("%s/%s", ApiBase, "transactions/")); err != nil {
+		return nil, err
+	}
+
+	if paginationParams != nil {
+		url.RawQuery = fmt.Sprintf("%s&%s", params.Encode(), paginationParams.Encode())
+	}
+
+	if req, err = http.NewRequest("GET", url.String(), nil); err != nil {
+		return nil, err
 	}
 	var resp *http.Response
 
-	if resp, err = c.Do(req); err != nil {
-		return transactions, err
+	if resp, err = t.Client.do(req); err != nil {
+		return nil, err
 	}
 
-	var response TransactionsResponse
-	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return transactions, err
+	if err = json.NewDecoder(resp.Body).Decode(response); err != nil {
+		return nil, err
 	}
-
-	return transactions, nil
+	return response, nil
 }
 
-func (c *Client) Do(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.accessToken))
-	if c.clientVersion != "" {
-		req.Header.Set("Client-Version-Id", c.clientVersion)
+func (r *TransactionsRequest) Iterator() TransactionsIterator {
+	return TransactionsIterator{
+		request:   r,
+		batchSize: MaxBatchSize,
 	}
-	return c.httpClient.Do(req)
+}
+
+func (t *TransactionsIterator) SetBatchSize(n int) {
+	if n < MaxBatchSize {
+		t.batchSize = n
+	}
+}
+
+func (t *TransactionsIterator) Next() ([]Transaction, []map[string]string, error) {
+	var err error
+	var params *url.Values
+	if t.response != nil {
+		params = t.response.Pages.Next
+	} else {
+		params = &url.Values{"limit": []string{strconv.Itoa(t.batchSize)}}
+	}
+
+	if t.response, err = t.request.get(params); err != nil {
+		return []Transaction{}, []map[string]string{}, fmt.Errorf("error when sending the request to seed: %v", err)
+	}
+	return t.response.Results, t.response.Errors, nil
+}
+
+func (t *TransactionsIterator) Previous() ([]Transaction, []map[string]string, error) {
+	var err error
+	var params *url.Values
+	if t.response != nil {
+		params = t.response.Pages.Previous
+	} else {
+		params = &url.Values{"limit": []string{strconv.Itoa(t.batchSize)}}
+	}
+
+	if t.response, err = t.request.get(params); err != nil {
+		return []Transaction{}, []map[string]string{}, fmt.Errorf("error when sending the request to seed: %v", err)
+	}
+	return t.response.Results, t.response.Errors, nil
+}
+
+func (t *TransactionsIterator) Errors() []map[string]string {
+	return t.response.Errors
 }
