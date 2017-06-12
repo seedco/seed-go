@@ -1,7 +1,7 @@
 # Seed-Go
 A Go client for the Seed API
 
-[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/seedco/seed-go)
+[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/seedco/seed-go)[![Build Status](https://circleci.com/gh/seedco/seed-go.svg?style=shield)](https://circleci.com/gh/seedco/seed-go)
 
 ## Usage
 
@@ -15,10 +15,17 @@ client := seed.New(accessToken)
 getTransactionsReq := TransactionRequest{
 	Client: client,
 }
+// The two options are between getting all transactions or using an iterator for pagination
 
-// create an iterator
+// All transcations
+
+transactions, err := getTransactionsReq.Get()
+
+// Using an iterator for pagination
 
 iterator := getTransactionsReq.Iterator()
+
+iterator.SetBatchSize(10)
 
 for iterator.HasNext() {
 	var transactions []seed.Transaction
