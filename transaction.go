@@ -42,11 +42,15 @@ type TransactionsResponse struct {
 	Pages   Pages         `json:"pages"`
 }
 
-func (t *TransactionsRequest) GetAll() ([]Transaction, error) {
+func (t *TransactionsRequest) Get() ([]Transaction, error) {
 	var resp *TransactionsResponse
 	var err error
 	if resp, err = t.get(nil); err != nil {
 		return []Transaction{}, err
+	}
+
+	if len(resp.Errors) > 0 {
+		return resp.Results, resp.Errors
 	}
 
 	return resp.Results, nil
