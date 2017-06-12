@@ -1,7 +1,7 @@
 # Seed-Go
 A Go client for the Seed API
 
-[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/seedco/seed-go)[![Build Status](https://circleci.com/gh/seedco/seed-go.svg?style=shield)](https://circleci.com/gh/seedco/seed-go)
+[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/seedco/seed-go) [![Build Status](https://circleci.com/gh/seedco/seed-go.svg?style=shield)](https://circleci.com/gh/seedco/seed-go)
 
 ## Usage
 
@@ -12,7 +12,7 @@ accessToken := "1.iap2H-4qQ-WR9sy55555uaytQ.o5A32LYL5-87a_60kcQiX1Lp878GVbx8xfVv
 
 client := seed.New(accessToken)
 
-getTransactionsReq := TransactionRequest{
+getTransactionsReq := TransactionsRequest{
 	Client: client,
 }
 // The two options are between getting all transactions or using an iterator for pagination
@@ -30,7 +30,7 @@ iterator.SetBatchSize(10)
 for iterator.HasNext() {
 	var transactions []seed.Transaction
 	var err error
-	if transactions, _, err = iterator.Next(); err != nil {
+	if transactions, err = iterator.Next(); err != nil {
 		panic(err.Error())
 	}
 	fmt.Printf("Transactions:\n%v", transactions)
@@ -38,5 +38,5 @@ for iterator.HasNext() {
 
 // previous will get the previous page of transactions
 
-previousTransactions, _, err = iterator.Previous()
+previousTransactions, err = iterator.Previous()
 ```
