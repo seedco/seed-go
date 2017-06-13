@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 )
 
@@ -56,10 +55,10 @@ func (t *TransactionsRequest) Get() ([]Transaction, error) {
 	return resp.Results, nil
 }
 
-func (t *TransactionsRequest) get(paginationParams *url.Values) (*TransactionsResponse, error) {
+func (t *TransactionsRequest) get(paginationParams *PaginationParams) (*TransactionsResponse, error) {
 	var err error
 	var req *http.Request
-	var response *TransactionsResponse
+	var response TransactionsResponse
 
 	params := &url.Values{}
 	if t.CheckingAccountID != "" {
@@ -77,7 +76,7 @@ func (t *TransactionsRequest) get(paginationParams *url.Values) (*TransactionsRe
 	}
 
 	var url *url.URL
-	if url, err = url.Parse(fmt.Sprintf("%s/%s", ApiBase, "transactions/")); err != nil {
+	if url, err = url.Parse(fmt.Sprintf("%s/%s", ApiBase, "transactions")); err != nil {
 		return nil, err
 	}
 
@@ -94,10 +93,10 @@ func (t *TransactionsRequest) get(paginationParams *url.Values) (*TransactionsRe
 		return nil, err
 	}
 
-	if err = json.NewDecoder(resp.Body).Decode(response); err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
-	return response, nil
+	return &response, nil
 }
 
 func (r *TransactionsRequest) Iterator() TransactionsIterator {
@@ -116,31 +115,40 @@ func (t *TransactionsIterator) SetBatchSize(n int) {
 // Next will retrieve the next batch of transactions. It returns a slice of Transactions, and any http errors
 func (t *TransactionsIterator) Next() ([]Transaction, error) {
 	var err error
-	var params *url.Values
+	var params PaginationParams
 	if t.response != nil {
 		params = t.response.Pages.Next
 	} else {
-		params = &url.Values{"limit": []string{strconv.Itoa(t.batchSize)}}
+		params = PaginationParams{Limit: t.batchSize}
 	}
 
-	if t.response, err = t.request.get(params); err != nil {
+	if t.response, err = t.request.get(&params); err != nil {
 		return []Transaction{}, fmt.Errorf("error when sending the request to seed: %v", err)
 	}
-	return t.response.Results, &t.response.Errors
+
+	if len(t.response.Errors) > 0 {
+		return t.response.Results, t.response.Errors
+	}
+
+	return t.response.Results, nil
 }
 
 // Previous will retrieve the previous batch of transactions. It returns a slice of Transactions, and any errors that happen
 func (t *TransactionsIterator) Previous() ([]Transaction, error) {
 	var err error
-	var params *url.Values
+	var params PaginationParams
 	if t.response != nil {
 		params = t.response.Pages.Previous
 	} else {
-		params = &url.Values{"limit": []string{strconv.Itoa(t.batchSize)}}
+		params = PaginationParams{Limit: t.batchSize}
 	}
 
-	if t.response, err = t.request.get(params); err != nil {
+	if t.response, err = t.request.get(&params); err != nil {
 		return []Transaction{}, fmt.Errorf("error when sending the request to seed: %v", err)
 	}
-	return t.response.Results, &t.response.Errors
+	if len(t.response.Errors) > 0 {
+		return t.response.Results, t.response.Errors
+	}
+
+	return t.response.Results, nil
 }

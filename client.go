@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -39,8 +41,57 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 }
 
 type Pages struct {
-	Next     *url.Values `json:"next"`
-	Previous *url.Values `json:"previous"`
+	Next     PaginationParams `json:"next"`
+	Previous PaginationParams `json:"previous"`
+}
+
+type PaginationParams struct {
+	Offset int `json:"offest"`
+	Limit  int `json:"limit"`
+}
+
+func (p PaginationParams) MarshalJSON() ([]byte, error) {
+	return []byte(p.Encode()), nil
+}
+
+func (p *PaginationParams) UnmarshalJSON(d []byte) error {
+	var err error
+	s := string(d)
+	params := strings.Split(s, "&")
+
+	for _, param := range params {
+		split := strings.Split(param, "=")
+		if len(split) != 2 {
+			continue
+		}
+		switch split[0] {
+		case "limit":
+			var limit int
+			if limit, err = strconv.Atoi(split[1]); err != nil {
+				return err
+			}
+			p.Limit = limit
+		case "offset":
+			var offset int
+			if offset, err = strconv.Atoi(split[1]); err != nil {
+				return err
+			}
+			p.Offset = offset
+		}
+	}
+	return nil
+}
+
+func (p PaginationParams) Encode() string {
+	u := url.Values{}
+	if p.Offset > 0 {
+		u.Set("offset", strconv.Itoa(p.Offset))
+	}
+	if p.Limit > 0 {
+		u.Set("limit", strconv.Itoa(p.Limit))
+	}
+
+	return u.Encode()
 }
 
 type ErrorList []map[string]string
