@@ -69,10 +69,10 @@ func (t *TransactionsRequest) get(paginationParams *PaginationParams) (*Transact
 	}
 	dateLayout := "2006-01-02"
 	if !t.From.IsZero() {
-		params.Set("from", t.From.Format(dateLayout))
+		params.Set("start_date", t.From.Format(dateLayout))
 	}
 	if !t.To.IsZero() {
-		params.Set("to", t.To.Format(dateLayout))
+		params.Set("end_date", t.To.Format(dateLayout))
 	}
 
 	var url *url.URL
