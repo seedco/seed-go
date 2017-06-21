@@ -1,7 +1,7 @@
 # Seed-Go
 A Go client for the Seed API
 
-[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/seedco/seed-go) [![Build Status](https://circleci.com/gh/seedco/seed-go.svg?style=shield)](https://circleci.com/gh/seedco/seed-go)
+[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/seedco/seed-go) [![Build Status](https://circleci.com/gh/seedco/seed-go.svg?style=shield)](https://circleci.com/gh/seedco/seed-go) [![Go Report Card](https://goreportcard.com/badge/github.com/seedco/seed-go)](https://goreportcard.com/report/github.com/seedco/seed-go)
 
 ## Usage
 
