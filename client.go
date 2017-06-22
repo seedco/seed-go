@@ -10,9 +10,11 @@ import (
 )
 
 const (
+	// ApiBase is the base url for the seed api
 	ApiBase = "https://api.seed.co/v1/public"
 )
 
+// Client is a seed client that can be used to create different request objects to fetch data
 type Client struct {
 	accessToken   string
 	clientVersion string
@@ -40,20 +42,28 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 	return c.httpClient.Do(req)
 }
 
+// Pages contains pagination information
 type Pages struct {
-	Next     PaginationParams `json:"next"`
+	// Next is the set of parameters for the next page
+	Next PaginationParams `json:"next"`
+	// Previous is the set of parameters for the previous page
 	Previous PaginationParams `json:"previous"`
 }
 
+// PaginationParams encapsulates the two pagination values, offset and limit
 type PaginationParams struct {
+	// Offset is the pagination offset index
 	Offset int `json:"offest"`
-	Limit  int `json:"limit"`
+	// Limit is the pagination limit
+	Limit int `json:"limit"`
 }
 
+// MarshalJSON marshalls pagination params
 func (p PaginationParams) MarshalJSON() ([]byte, error) {
 	return []byte(p.Encode()), nil
 }
 
+// UnmarshalJSON unmarshalls pagination params
 func (p *PaginationParams) UnmarshalJSON(d []byte) error {
 	var err error
 	s := string(d)
@@ -82,6 +92,7 @@ func (p *PaginationParams) UnmarshalJSON(d []byte) error {
 	return nil
 }
 
+// Encode encodes offset and limit into a url query string
 func (p PaginationParams) Encode() string {
 	u := url.Values{}
 	if p.Offset > 0 {
@@ -94,8 +105,10 @@ func (p PaginationParams) Encode() string {
 	return u.Encode()
 }
 
+// ErrorList is a list of maps that contain error message, field pairs
 type ErrorList []map[string]string
 
+// Error returns a comma delineated string of errors
 func (e ErrorList) Error() string {
 	buf := bytes.NewBufferString("")
 	for _, e := range e {

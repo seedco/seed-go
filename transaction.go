@@ -9,38 +9,58 @@ import (
 )
 
 const (
+	// MaxBatchSize is the maximum pagination limit for a transaction query
 	MaxBatchSize = 1000
 )
 
+// Transaction contains relevant information about a transaction
 type Transaction struct {
-	Date        time.Time `json:"date"`
-	Description string    `json:"description"`
-	Amount      int64     `json:"amount"`
-	Error       string    `json:"error"`
-	Status      string    `json:"status"`
-	Category    string    `json:"category"`
+	// Date is the date of the transaction
+	Date time.Time `json:"date"`
+	// Description is the description of the transaction
+	Description string `json:"description"`
+	// Amount is the amount of the transaction in cents
+	Amount int64 `json:"amount"`
+	// Error contains any errors that happened with the transaction
+	Error string `json:"error"`
+	// Status is either "pending" or "settled"
+	Status string `json:"status"`
+	// Category is the category of the transaction
+	Category string `json:"category"`
 }
 
+// TransactionsRequest contains fields for querying transactions
 type TransactionsRequest struct {
+	// CheckingAccountID is a uuid of the checking account for the transaction request
 	CheckingAccountID string
-	Status            string
-	From              time.Time
-	To                time.Time
-	Client            *Client
+	// Status is either "pending" or "settled"
+	Status string
+	// From is the start date of the date range, inclusive
+	From time.Time
+	// To is the end date of the date range, exclusive
+	To time.Time
+	// Client is the seed client that will send the request
+	Client *Client
 }
 
+// TransactionsIterator is an iterator to iterate through pages of transaction results
 type TransactionsIterator struct {
 	request   *TransactionsRequest
 	response  *TransactionsResponse
 	batchSize int
 }
 
+// TransactionsResponse is the response object that the server data unmarshalls into
 type TransactionsResponse struct {
-	Errors  ErrorList     `json:"errors"`
+	// Errors is a list of errors
+	Errors ErrorList `json:"errors"`
+	// Results is a slice of transaction objects
 	Results []Transaction `json:"results"`
-	Pages   Pages         `json:"pages"`
+	// Pages contains pagination information
+	Pages Pages `json:"pages"`
 }
 
+// Get retrieves a list of transactions
 func (t *TransactionsRequest) Get() ([]Transaction, error) {
 	var resp *TransactionsResponse
 	var err error
@@ -99,13 +119,15 @@ func (t *TransactionsRequest) get(paginationParams *PaginationParams) (*Transact
 	return &response, nil
 }
 
-func (r *TransactionsRequest) Iterator() TransactionsIterator {
+// Iterator returns a TransactionIterator
+func (t *TransactionsRequest) Iterator() TransactionsIterator {
 	return TransactionsIterator{
-		request:   r,
+		request:   t,
 		batchSize: MaxBatchSize,
 	}
 }
 
+// SetBatchSize sets the batch size for paginated results
 func (t *TransactionsIterator) SetBatchSize(n int) {
 	if n < MaxBatchSize {
 		t.batchSize = n
